@@ -1,5 +1,7 @@
 package com.epam.izh.rd.online.service;
 
+import com.epam.izh.rd.online.exception.NotCorrectPasswordException;
+import com.epam.izh.rd.online.exception.UserNotFoundException;
 import com.epam.izh.rd.online.entity.User;
 import com.epam.izh.rd.online.repository.IUserRepository;
 
@@ -25,16 +27,23 @@ public class AuthenticationService implements IAuthenticationService {
      * @param user - пользователь проходящий авторизацию
      */
     @Override
-    public User login(User user) {
-        // Находим пользователя в базе
-        User foundUser = userRepository.findByLogin(user.getLogin());
+    public User login(User user) throws UserNotFoundException, NotCorrectPasswordException {
+        User foundUser = null;
+        String passworFoundUser;
+        try {
 
-        //
-        // Здесь необходимо реализовать перечисленные выше проверки
-        //
-
-        // Устанавливаем найденного пользователя, который прошел все проверки, как вошедшего в систему.
-        CurrentUserManager.setCurrentLoggedInUser(foundUser);
+            foundUser = userRepository.findByLogin(user.getLogin());
+            passworFoundUser = foundUser.getPassword();
+        } catch (NullPointerException e) {
+            throw new UserNotFoundException("Пользователь с таким логином не найден");
+        }
+        if (foundUser != null) {
+            throw new NotCorrectPasswordException("Пользователь с таким логином не найден");
+        } else if (!user.getPassword().equals(passworFoundUser)) {
+            throw new NotCorrectPasswordException("Пароль введен неверно!");
+        } else {
+            CurrentUserManager.setCurrentLoggedInUser(foundUser);
+        }
 
         return foundUser;
     }
